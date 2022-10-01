@@ -44,6 +44,12 @@ sleep(3)
 led = machine.Pin("LED", machine.Pin.OUT)
 led.off()
 
+# Start MPU6050 accelerometer
+print("Accelerometer starting ... ", end="")
+i2c = I2C(accel_urt, sda=Pin(accel_sda), scl=Pin(accel_scl)) #, freq=400000)
+imu = MPU6050(i2c)
+print("Done!")
+
 # Connect to wireless network
 print("Connecting to network %s ..." %wifi_ssid, end="")
 nic = network.WLAN(network.STA_IF)
@@ -102,12 +108,6 @@ def set_time():
 set_time()
 print("Synchronized time with API server: %s" %current_date_time_string())
 
-# Start MPU6050 accelerometer
-print("Accelerometer starting ... ", end="")
-i2c = I2C(accel_urt, sda=Pin(accel_sda), scl=Pin(accel_scl)) #, freq=400000)
-imu = MPU6050(i2c)
-print("Done!")
-
 # Create file to store data
 if to_file == 1:
     file = open(ofilename, "w")
@@ -133,12 +133,22 @@ def mqtt_connect(client_id, mqtt_srvr):
     return client
 
 if to_mqtt == 1:
-    try:
-        print("Connecting to MQTT broker %s ... " %mqtt_srvr, end="")
+    counter = 0
+    print("Connecting to MQTT broker %s ... " %mqtt_srvr, end="")
+    while True:
+        led.on()
         client = mqtt_connect(client_id, mqtt_srvr)
-        print("Connected!")
-    except OSError as e:
-        print("Failed!")
+        if client:
+            print("Connected!")
+            led.off()
+            break;
+        else:
+            sleep(1)
+            counter = counter + 1
+            if counter == 30:
+                # reboot and try again
+                print("Unable to connect. Restarting ... ")
+                machine.reset()
 
 # Loop forever
 print()
@@ -169,6 +179,6 @@ while True:
         try:
             client.publish(topic_pub, line)
         except OSError as e:
-            print("Unable to publish to MQTT broker %s!")
+            print("Unable to publish to MQTT broker!")
 
     sleep(1)

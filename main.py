@@ -144,7 +144,7 @@ def mqtt_connect_and_subscribe(client_id, mqtt_srvr, topic_sub, mqtt_subscribe_c
     return client
 
 def mqtt_connect(client_id, mqtt_srvr, mqtt_port, mqtt_user, mqtt_pass):
-    client = MQTTClient(client_id, mqtt_srvr, mqtt_port, mqtt_user, mqtt_pass)
+    client = MQTTClient(client_id, mqtt_srvr, int(mqtt_port), mqtt_user, mqtt_pass)
     client.connect()
     #print("Connected to MQTT broker %s" %mqtt_srvr)
     #print("Publishing to MQTT topic %s" %topic_pub)

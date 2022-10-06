@@ -5,6 +5,8 @@ from time import localtime, sleep
 from umqttsimple import MQTTClient
 import network, sys, ubinascii, urequests
 
+sleep(2)
+
 # Settings
 to_screen = 1
 to_file   = 0
@@ -18,6 +20,9 @@ client_id = ubinascii.hexlify(machine.unique_id())
 # Settings from env.json 
 load_env()
 mqtt_srvr = get_env("mqtt_srvr")
+mqtt_port = get_env("mqtt_port")
+mqtt_user = get_env("mqtt_user")
+mqtt_pass = get_env("mqtt_pass")
 topic_pub = get_env("topic_pub")
 ofilename = get_env("ofilename")
 wifi_ssid = get_env("wifi_ssid")
@@ -77,6 +82,19 @@ def current_date_time_string():
     timestamp = rtc.datetime()
     return "%04d-%02d-%02d %02d:%02d:%02d" % (timestamp[0:3] + timestamp[4:7])
 
+def get_mqtt_server():
+    import json
+    json_url = "https://server.abarker.ca/mqtt_server.json"
+    response = ""
+    response = urequests.get(json_url)
+    if response.status_code == 200:
+        print(response.text)
+        data = json.loads(response.text)
+        mqtt_srvr = data["server"]
+
+#get_mqtt_server()
+#print_variable("mqtt_srvr", colon_position)
+
 def set_time():
     import json
     # Set the RTC using API @ "http://worldtimeapi.org/api/timezone/America/Toronto"
@@ -125,8 +143,8 @@ def mqtt_connect_and_subscribe(client_id, mqtt_srvr, topic_sub, mqtt_subscribe_c
     #print('Connected to %s MQTT broker, subscribed to %s topic' %(mqtt_srvr, topic_sub))
     return client
 
-def mqtt_connect(client_id, mqtt_srvr):
-    client = MQTTClient(client_id, mqtt_srvr)
+def mqtt_connect(client_id, mqtt_srvr, mqtt_port, mqtt_user, mqtt_pass):
+    client = MQTTClient(client_id, mqtt_srvr, mqtt_port, mqtt_user, mqtt_pass)
     client.connect()
     #print("Connected to MQTT broker %s" %mqtt_srvr)
     #print("Publishing to MQTT topic %s" %topic_pub)
@@ -137,7 +155,7 @@ if to_mqtt == 1:
     print("Connecting to MQTT broker %s ... " %mqtt_srvr, end="")
     while True:
         led.on()
-        client = mqtt_connect(client_id, mqtt_srvr)
+        client = mqtt_connect(client_id, mqtt_srvr, mqtt_port, mqtt_user, mqtt_pass)
         if client:
             print("Connected!")
             led.off()

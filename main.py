@@ -5,7 +5,7 @@ from time import localtime, sleep
 from umqttsimple import MQTTClient
 import network, sys, ubinascii, urequests
 
-sleep(2)
+sleep(5)
 
 # Settings
 to_screen = 1
@@ -23,7 +23,13 @@ mqtt_srvr = get_env("mqtt_srvr")
 mqtt_port = get_env("mqtt_port")
 mqtt_user = get_env("mqtt_user")
 mqtt_pass = get_env("mqtt_pass")
-topic_pub = get_env("topic_pub")
+ax_ptopic = get_env("ax_ptopic")
+ay_ptopic = get_env("ay_ptopic")
+az_ptopic = get_env("az_ptopic")
+gx_ptopic = get_env("gx_ptopic")
+gy_ptopic = get_env("gy_ptopic")
+gz_ptopic = get_env("gz_ptopic")
+tp_ptopic = get_env("tp_ptopic")
 ofilename = get_env("ofilename")
 wifi_ssid = get_env("wifi_ssid")
 wifi_pass = get_env("wifi_pass")
@@ -32,16 +38,21 @@ wifi_pass = get_env("wifi_pass")
 def print_variable(variable_name, colon_position=0):
     key = variable_name
     val = globals()[variable_name]
-    print("{}".format(key) + (' ' * max(0, colon_position - len(key))), ":", val)
+    print("{}".format(key) + (" " * max(0, colon_position - len(key))), ":", val)
 
 print("Configuration")
 colon_position = 11
 print_variable("wifi_ssid", colon_position)
 print_variable("wifi_pass", colon_position)
 print_variable("mqtt_srvr", colon_position)
-print_variable("topic_pub", colon_position)
+print_variable("ax_ptopic", colon_position)
+print_variable("ay_ptopic", colon_position)
+print_variable("az_ptopic", colon_position)
+print_variable("gx_ptopic", colon_position)
+print_variable("gy_ptopic", colon_position)
+print_variable("gz_ptopic", colon_position)
+print_variable("tp_ptopic", colon_position)
 print_variable("ofilename", colon_position)
-#print_variable("xxx")
 print()
 
 # Startup
@@ -81,19 +92,6 @@ def current_date_time_string():
     rtc = RTC()
     timestamp = rtc.datetime()
     return "%04d-%02d-%02d %02d:%02d:%02d" % (timestamp[0:3] + timestamp[4:7])
-
-def get_mqtt_server():
-    import json
-    json_url = "https://server.abarker.ca/mqtt_server.json"
-    response = ""
-    response = urequests.get(json_url)
-    if response.status_code == 200:
-        print(response.text)
-        data = json.loads(response.text)
-        mqtt_srvr = data["server"]
-
-#get_mqtt_server()
-#print_variable("mqtt_srvr", colon_position)
 
 def set_time():
     import json
@@ -180,23 +178,38 @@ while True:
     gz = round(imu.gyro.z,  decimals)
     tp = round(imu.temperature, decimals)
 
-    #rtc = RTC()
-    #timestamp = rtc.datetime()
-    #timestring = "%04d-%02d-%02d %02d:%02d:%02d" % (timestamp[0:3] + timestamp[4:7])
     timestring = current_date_time_string()
     line = timestring + "," + str(ax) + "," + str(ay) + "," + str(az) + "," + str(gx) + "," + str(gy) + "," + str(gz) + "," + str(tp)
 
     # Screen
-    if to_screen == 1: print(line)
+    if to_screen == 1: 
+        print(timestring + "     ", end="")
+        print(str(ax) + (" " * max(0, 10 - len(str(ax)))), end="")
+        print(str(ay) + (" " * max(0, 10 - len(str(ay)))), end="")
+        print(str(az) + (" " * max(0, 10 - len(str(az)))), end="")
+        print(str(gx) + (" " * max(0, 10 - len(str(gx)))), end="")
+        print(str(gy) + (" " * max(0, 10 - len(str(gy)))), end="")
+        print(str(gz) + (" " * max(0, 10 - len(str(gz)))), end="")
+        print(str(tp) + (" " * max(0, 10 - len(str(tp)))), end="")
     
     # File
-    if to_file == 1: file.write(line + "\n")
+    if to_file == 1: 
+        file.write(line + "\n")
+        print("f ", end="")
     
     # MQTT
     if to_mqtt == 1:
         try:
-            client.publish(topic_pub, line)
+            client.publish(ax_ptopic, str(ax))
+            client.publish(ay_ptopic, str(ay))
+            client.publish(az_ptopic, str(az))
+            client.publish(gx_ptopic, str(gx))
+            client.publish(gy_ptopic, str(gy))
+            client.publish(gz_ptopic, str(gz))
+            client.publish(tp_ptopic, str(tp))
+            print("m ", end="")
         except OSError as e:
             print("Unable to publish to MQTT broker!")
 
+    print()
     sleep(1)

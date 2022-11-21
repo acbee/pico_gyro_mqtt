@@ -150,25 +150,33 @@ def mqtt_connect(client_id, mqtt_srvr, mqtt_port, mqtt_user, mqtt_pass):
 
 if to_mqtt == 1:
     counter = 0
-    print("Connecting to MQTT broker %s ... " %mqtt_srvr, end="")
+    print("Connecting to MQTT broker %s ..." %mqtt_srvr, end="")
     while True:
         led.on()
-        client = mqtt_connect(client_id, mqtt_srvr, mqtt_port, mqtt_user, mqtt_pass)
-        if client:
-            print("Connected!")
-            led.off()
-            break;
-        else:
-            sleep(1)
+        try: 
+            client = mqtt_connect(client_id, mqtt_srvr, mqtt_port, mqtt_user, mqtt_pass)
+            if client:
+                print("\nConnected!")
+                led.off()
+                break;
+            else:
+                counter = counter + 1
+                print(".", end="")
+                sleep(5)
+        except: 
             counter = counter + 1
-            if counter == 30:
-                # reboot and try again
-                print("Unable to connect. Restarting ... ")
-                machine.reset()
+            print(".", end="")
+            sleep(5)
+
+        if counter == 30:
+            # reboot and try again
+            print("\nUnable to connect. Restarting ... ")
+            machine.reset()
 
 # Loop forever
 print()
 print("Looping ... ")
+mqtt_fail_count = 0
 while True:
     ax = round(imu.accel.x, decimals)
     ay = round(imu.accel.y, decimals)
@@ -209,7 +217,13 @@ while True:
             client.publish(tp_ptopic, str(tp))
             print("m ", end="")
         except OSError as e:
-            print("Unable to publish to MQTT broker!")
+            mqtt_fail_count = mqtt_fail_count + 1
+            print("MQTT Publish Error! Attempt " + str(mqtt_fail_count), end="")
+            if mqtt_fail_count > 29:
+                # reboot and try again
+                print("\nUnable to connect. Restarting ... ")
+                sleep(1)
+                machine.reset()
 
     print()
     sleep(1)
